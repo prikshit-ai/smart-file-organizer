@@ -1,0 +1,21 @@
+# Smart File Organizer — Configuration File
+# Place this file in your project root or at ~/.config/smart-file-organizer/config.yaml
+
+# Custom file extension → folder name rules.
+# These OVERRIDE the built-in defaults.
+# Format:  ".extension": "FolderName"
+rules:
+  # Examples (uncomment to enable):
+  # ".mp4": "Videos/Work"          # Put all MP4s in a Work subfolder
+  # ".pdf": "Documents/PDFs"       # Override smart PDF detection
+  # ".blend": "3DFiles"            # Custom extension not in defaults
+  # ".torrent": "Torrents"
+
+# Optional: set a default watch folder (used if no folder argument is given)
+# watch_folder: "/Users/yourname/Downloads"
+
+# Suppress desktop notifications globally
+# silent: false
+
+# Always run in dry-run mode (safe preview, never moves files)
+# dry_run: false

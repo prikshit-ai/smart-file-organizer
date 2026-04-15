@@ -1,0 +1,18 @@
+[
+  {
+    "timestamp": "2026-04-16T00:48:21.454225",
+    "filename": "file1.pdf",
+    "source": "/Users/prikshitgaur/Desktop/ost/smart-file-organizer/test_folder/file1.pdf",
+    "destination": "/Users/prikshitgaur/Desktop/ost/smart-file-organizer/test_folder/PDFs/General/file1.pdf",
+    "category": "PDFs/General",
+    "dry_run": false
+  },
+  {
+    "timestamp": "2026-04-16T00:48:21.476895",
+    "filename": "file2.jpg",
+    "source": "/Users/prikshitgaur/Desktop/ost/smart-file-organizer/test_folder/file2.jpg",
+    "destination": "/Users/prikshitgaur/Desktop/ost/smart-file-organizer/test_folder/Images/file2.jpg",
+    "category": "Images",
+    "dry_run": false
+  }
+]
