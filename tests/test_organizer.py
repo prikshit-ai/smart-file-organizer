@@ -130,6 +130,36 @@ class TestUndo:
         assert (tmp_folder / "b.jpg").exists()
 
 
+class TestNotifications:
+    def test_organize_continues_when_notify_raises(self, tmp_folder):
+        cfg = tmp_folder / "cfg.yaml"
+        cfg.write_text("notifications: true\n")
+        org = Organizer(tmp_folder, config_path=str(cfg), silent=False)
+        f = make_file(tmp_folder, "photo.jpg")
+        with patch("src.organizer.notify", side_effect=RuntimeError("notify boom")):
+            entry = org.organize_file(f)
+        assert entry is not None
+        assert (tmp_folder / "Images" / "photo.jpg").exists()
+
+    def test_config_notifications_false_skips_notify(self, tmp_folder):
+        cfg = tmp_folder / "cfg.yaml"
+        cfg.write_text("notifications: false\n")
+        org = Organizer(tmp_folder, config_path=str(cfg), silent=False)
+        f = make_file(tmp_folder, "photo.jpg")
+        with patch("src.organizer.notify") as mock_notify:
+            org.organize_file(f)
+        mock_notify.assert_not_called()
+
+    def test_config_silent_skips_notify(self, tmp_folder):
+        cfg = tmp_folder / "cfg.yaml"
+        cfg.write_text("silent: true\n")
+        org = Organizer(tmp_folder, config_path=str(cfg), silent=False)
+        f = make_file(tmp_folder, "photo.jpg")
+        with patch("src.organizer.notify") as mock_notify:
+            org.organize_file(f)
+        mock_notify.assert_not_called()
+
+
 class TestReport:
     def test_report_empty(self, organizer):
         r = organizer.report()

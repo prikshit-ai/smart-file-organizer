@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 DEFAULT_CONFIG_PATH = Path.home() / ".config" / "smart-file-organizer" / "config.yaml"
 LOCAL_CONFIG_PATH = Path("config.yaml")
 
-VALID_KEYS = {"rules", "watch_folder", "silent", "dry_run"}
+VALID_KEYS = {"rules", "watch_folder", "silent", "dry_run", "notifications"}
 
 
 def load_config(config_path: str = None) -> dict:
@@ -66,3 +66,6 @@ def _validate(config: dict, path: Path):
             logger.warning(f"Config rule key '{ext}' should start with '.' (e.g. '.mp4')")
         if not isinstance(folder, str):
             raise ValueError(f"Rule value for '{ext}' must be a string folder name")
+
+    if "notifications" in config and not isinstance(config["notifications"], bool):
+        raise ValueError(f"'notifications' must be true or false in {path}")

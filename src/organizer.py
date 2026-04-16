@@ -21,8 +21,10 @@ LOG_FILE = "organizer_log.json"
 class Organizer:
     def __init__(self, watch_folder: Path, config_path: str = None, silent: bool = False):
         self.watch_folder = Path(watch_folder).resolve()
-        self.silent = silent
         self.config = load_config(config_path)
+        cfg_silent = bool(self.config.get("silent", False))
+        cfg_notify_off = self.config.get("notifications") is False
+        self.silent = silent or cfg_silent or cfg_notify_off
         self.custom_rules = self.config.get("rules", {})
         self.log_path = self.watch_folder / LOG_FILE
 
@@ -108,10 +110,17 @@ class Organizer:
         logger.info(f"Moved '{file_path.name}' → {subfolder}/")
 
         if not self.silent:
-            notify(
-                title="File Organizer",
-                message=f"Moved {file_path.name} → {subfolder}/",
-            )
+            try:
+                notify(
+                    title="File Organizer",
+                    message=f"Moved {file_path.name} → {subfolder}/",
+                )
+            except Exception as e:
+                logger.warning(
+                    "Unexpected error from notify() (%s): %s",
+                    type(e).__name__,
+                    e,
+                )
 
         print(f"  Moved: {file_path.name!r}  →  {subfolder}/")
         return entry
