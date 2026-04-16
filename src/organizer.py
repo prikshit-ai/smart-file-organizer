@@ -171,7 +171,7 @@ class Organizer:
                 continue
 
             if dest.exists():
-                print(f"  Conflict detected for {dest.name}, resolving...")
+                print(f" Conflict detected for {dest.name},resolving...") 
                 dest = self._resolve_dest(dest)
 
             dest.parent.mkdir(parents=True, exist_ok=True)
