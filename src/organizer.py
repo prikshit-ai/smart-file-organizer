@@ -180,8 +180,8 @@ class Organizer:
                 continue
 
             if dest.exists():
-                print(f"  Skipping (already exists at source): {dest.name}")
-                continue
+                print(f" Conflict detected for {dest.name},resolving...") 
+                dest = self._resolve_dest(dest)
 
             dest.parent.mkdir(parents=True, exist_ok=True)
             shutil.move(str(src), str(dest))
