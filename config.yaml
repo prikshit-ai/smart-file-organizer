@@ -14,8 +14,12 @@ rules:
 # Optional: set a default watch folder (used if no folder argument is given)
 # watch_folder: "/Users/yourname/Downloads"
 
-# Suppress desktop notifications globally
+# Suppress desktop notifications globally (same effect as CLI --silent)
 # silent: false
+
+# Desktop notifications on successful moves (default: true). Set false to disable
+# without using silent: true (handy if you only want to mute notifications).
+# notifications: true
 
 # Always run in dry-run mode (safe preview, never moves files)
 # dry_run: false

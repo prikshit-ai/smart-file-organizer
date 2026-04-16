@@ -43,4 +43,4 @@ def notify(title: str, message: str, timeout: int = 5):
         )
     except Exception as e:
         # Notifications are non-critical — never crash the main process
-        logger.debug(f"Notification failed: {e}")
+        logger.warning("Desktop notification failed (%s): %s", type(e).__name__, e)
