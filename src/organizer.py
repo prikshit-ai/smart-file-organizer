@@ -6,6 +6,7 @@ Handles moving files, collision resolution, logging, and notifications.
 import json
 import shutil
 import logging
+import time
 from datetime import datetime
 from pathlib import Path
 
@@ -16,6 +17,8 @@ from .notifier import notify
 logger = logging.getLogger(__name__)
 
 LOG_FILE = "organizer_log.json"
+MOVE_RETRY_ATTEMPTS = 3
+MOVE_RETRY_DELAY_SECONDS = 0.5
 
 
 class Organizer:
@@ -61,6 +64,47 @@ class Organizer:
                 return candidate
             counter += 1
 
+    def _move_with_retry(self, source: Path, destination: Path):
+        """Retry transient move failures before surfacing the error."""
+        last_error = None
+
+        for attempt in range(1, MOVE_RETRY_ATTEMPTS + 1):
+            try:
+                shutil.move(str(source), str(destination))
+                if attempt > 1:
+                    logger.info(
+                        "Move succeeded on retry %s/%s: '%s' -> '%s'",
+                        attempt,
+                        MOVE_RETRY_ATTEMPTS,
+                        source,
+                        destination,
+                    )
+                return
+            except OSError as exc:
+                last_error = exc
+                if attempt == MOVE_RETRY_ATTEMPTS:
+                    break
+
+                logger.warning(
+                    "Move attempt %s/%s failed for '%s' -> '%s': %s. Retrying in %.1fs.",
+                    attempt,
+                    MOVE_RETRY_ATTEMPTS,
+                    source,
+                    destination,
+                    exc,
+                    MOVE_RETRY_DELAY_SECONDS,
+                )
+                time.sleep(MOVE_RETRY_DELAY_SECONDS)
+
+        logger.error(
+            "Move failed after %s attempts for '%s' -> '%s': %s",
+            MOVE_RETRY_ATTEMPTS,
+            source,
+            destination,
+            last_error,
+        )
+        raise last_error
+
     def organize_file(self, file_path: Path, dry_run: bool = False) -> dict | None:
         """
         Organize a single file into its appropriate subfolder.
@@ -104,7 +148,7 @@ class Organizer:
             return entry
 
         dest_dir.mkdir(parents=True, exist_ok=True)
-        shutil.move(str(file_path), str(dest_file))
+        self._move_with_retry(file_path, dest_file)
 
         self._append_log(entry)
         logger.info(f"Moved '{file_path.name}' → {subfolder}/")
@@ -184,7 +228,7 @@ class Organizer:
                 dest = self._resolve_dest(dest)
 
             dest.parent.mkdir(parents=True, exist_ok=True)
-            shutil.move(str(src), str(dest))
+            self._move_with_retry(src, dest)
             print(f"  Restored: {src.name!r}  →  {dest.parent.name}/")
             logger.info(f"Undone: '{src.name}' restored to '{dest}'")
             restored += 1

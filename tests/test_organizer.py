@@ -84,6 +84,35 @@ class TestOrganizeFile:
         assert log[0]["filename"] == "photo.jpg"
         assert log[0]["category"] == "Images"
 
+    def test_retries_move_until_success(self, organizer, tmp_folder):
+        f = make_file(tmp_folder, "photo.jpg")
+        dest = tmp_folder / "Images" / "photo.jpg"
+
+        with patch("src.organizer.time.sleep") as mock_sleep, \
+             patch("src.organizer.notify"), \
+             patch("src.organizer.shutil.move", side_effect=[
+                 OSError("locked"),
+                 OSError("still locked"),
+                 None,
+             ]) as mock_move:
+            organizer.organize_file(f)
+
+        assert mock_move.call_count == 3
+        mock_sleep.assert_called_with(0.5)
+        assert mock_move.call_args_list[-1].args == (str(f), str(dest))
+
+    def test_raises_after_exhausting_move_retries(self, organizer, tmp_folder):
+        f = make_file(tmp_folder, "photo.jpg")
+
+        with patch("src.organizer.time.sleep") as mock_sleep, \
+             patch("src.organizer.notify"), \
+             patch("src.organizer.shutil.move", side_effect=OSError("locked")) as mock_move:
+            with pytest.raises(OSError, match="locked"):
+                organizer.organize_file(f)
+
+        assert mock_move.call_count == 3
+        assert mock_sleep.call_count == 2
+
 
 class TestOrganizeAll:
     def test_organizes_multiple_files(self, organizer, tmp_folder):
