@@ -14,5 +14,93 @@
     "destination": "/Users/prikshitgaur/Desktop/ost/smart-file-organizer/test_folder/Images/file2.jpg",
     "category": "Images",
     "dry_run": false
+  },
+  {
+    "timestamp": "2026-04-16T16:25:58.514020",
+    "filename": "file.py",
+    "source": "/Users/prikshitgaur/Desktop/ost/smart-file-organizer/test_folder/file.py",
+    "destination": "/Users/prikshitgaur/Desktop/ost/smart-file-organizer/test_folder/Code/file.py",
+    "category": "Code",
+    "dry_run": false
+  },
+  {
+    "timestamp": "2026-04-16T16:25:58.529900",
+    "filename": "file3.txt",
+    "source": "/Users/prikshitgaur/Desktop/ost/smart-file-organizer/test_folder/file3.txt",
+    "destination": "/Users/prikshitgaur/Desktop/ost/smart-file-organizer/test_folder/Documents/file3.txt",
+    "category": "Documents",
+    "dry_run": false
+  },
+  {
+    "timestamp": "2026-04-16T16:25:58.697501",
+    "filename": "invoice.pdf",
+    "source": "/Users/prikshitgaur/Desktop/ost/smart-file-organizer/test_folder/invoice.pdf",
+    "destination": "/Users/prikshitgaur/Desktop/ost/smart-file-organizer/test_folder/PDFs/General/invoice.pdf",
+    "category": "PDFs/General",
+    "dry_run": false
+  },
+  {
+    "timestamp": "2026-04-16T16:25:58.697973",
+    "filename": "resume.pdf",
+    "source": "/Users/prikshitgaur/Desktop/ost/smart-file-organizer/test_folder/resume.pdf",
+    "destination": "/Users/prikshitgaur/Desktop/ost/smart-file-organizer/test_folder/PDFs/General/resume.pdf",
+    "category": "PDFs/General",
+    "dry_run": false
+  },
+  {
+    "timestamp": "2026-04-16T16:25:58.698259",
+    "filename": "song.mp3",
+    "source": "/Users/prikshitgaur/Desktop/ost/smart-file-organizer/test_folder/song.mp3",
+    "destination": "/Users/prikshitgaur/Desktop/ost/smart-file-organizer/test_folder/Audio/song.mp3",
+    "category": "Audio",
+    "dry_run": false
+  },
+  {
+    "timestamp": "2026-04-16T16:25:58.698564",
+    "filename": "video.mp4",
+    "source": "/Users/prikshitgaur/Desktop/ost/smart-file-organizer/test_folder/video.mp4",
+    "destination": "/Users/prikshitgaur/Desktop/ost/smart-file-organizer/test_folder/Videos/video.mp4",
+    "category": "Videos",
+    "dry_run": false
+  },
+  {
+    "timestamp": "2026-04-16T16:28:34.846480",
+    "filename": "file.py",
+    "source": "/Users/prikshitgaur/Desktop/ost/smart-file-organizer/test_folder/file.py",
+    "destination": "/Users/prikshitgaur/Desktop/ost/smart-file-organizer/test_folder/Code/file_1.py",
+    "category": "Code",
+    "dry_run": false
+  },
+  {
+    "timestamp": "2026-04-16T16:28:35.012204",
+    "filename": "invoice.pdf",
+    "source": "/Users/prikshitgaur/Desktop/ost/smart-file-organizer/test_folder/invoice.pdf",
+    "destination": "/Users/prikshitgaur/Desktop/ost/smart-file-organizer/test_folder/PDFs/Invoices/invoice.pdf",
+    "category": "PDFs/Invoices",
+    "dry_run": false
+  },
+  {
+    "timestamp": "2026-04-16T16:28:35.012763",
+    "filename": "resume.pdf",
+    "source": "/Users/prikshitgaur/Desktop/ost/smart-file-organizer/test_folder/resume.pdf",
+    "destination": "/Users/prikshitgaur/Desktop/ost/smart-file-organizer/test_folder/PDFs/Resumes/resume.pdf",
+    "category": "PDFs/Resumes",
+    "dry_run": false
+  },
+  {
+    "timestamp": "2026-04-16T16:28:35.013131",
+    "filename": "song.mp3",
+    "source": "/Users/prikshitgaur/Desktop/ost/smart-file-organizer/test_folder/song.mp3",
+    "destination": "/Users/prikshitgaur/Desktop/ost/smart-file-organizer/test_folder/Audio/song_1.mp3",
+    "category": "Audio",
+    "dry_run": false
+  },
+  {
+    "timestamp": "2026-04-16T16:28:35.013421",
+    "filename": "video.mp4",
+    "source": "/Users/prikshitgaur/Desktop/ost/smart-file-organizer/test_folder/video.mp4",
+    "destination": "/Users/prikshitgaur/Desktop/ost/smart-file-organizer/test_folder/Videos/video_1.mp4",
+    "category": "Videos",
+    "dry_run": false
   }
 ]
