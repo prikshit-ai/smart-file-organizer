@@ -1,6 +1,6 @@
 """
 organizer.py - Core file organization logic.
-Handles moving files, collision resolution, logging, and notifications.
+Handles moving files, collision resolution, logging, undo, and notifications.
 """
 
 import json
@@ -17,25 +17,27 @@ from .notifier import notify
 logger = logging.getLogger(__name__)
 
 LOG_FILE = "organizer_log.json"
-MOVE_RETRY_ATTEMPTS = 3
-MOVE_RETRY_DELAY_SECONDS = 0.5
 
 
 class Organizer:
     def __init__(self, watch_folder: Path, config_path: str = None, silent: bool = False):
         self.watch_folder = Path(watch_folder).resolve()
         self.config = load_config(config_path)
+
         cfg_silent = bool(self.config.get("silent", False))
         cfg_notify_off = self.config.get("notifications") is False
+
         self.silent = silent or cfg_silent or cfg_notify_off
         self.custom_rules = self.config.get("rules", {})
         self.log_path = self.watch_folder / LOG_FILE
+
+    # ---------------- LOG HANDLING ----------------
 
     def _load_log(self) -> list:
         if self.log_path.exists():
             try:
                 return json.loads(self.log_path.read_text(encoding="utf-8"))
-            except (json.JSONDecodeError, OSError):
+            except Exception:
                 return []
         return []
 
@@ -50,71 +52,29 @@ class Organizer:
         entries.append(entry)
         self._save_log(entries)
 
+    # ---------------- FILE NAME COLLISION ----------------
+
     def _resolve_dest(self, dest: Path) -> Path:
-        """Handle filename collisions by appending a counter."""
         if not dest.exists():
             return dest
+
         stem = dest.stem
         suffix = dest.suffix
         parent = dest.parent
         counter = 1
+
         while True:
             candidate = parent / f"{stem}_{counter}{suffix}"
             if not candidate.exists():
                 return candidate
             counter += 1
 
-    def _move_with_retry(self, source: Path, destination: Path):
-        """Retry transient move failures before surfacing the error."""
-        last_error = None
-
-        for attempt in range(1, MOVE_RETRY_ATTEMPTS + 1):
-            try:
-                shutil.move(str(source), str(destination))
-                if attempt > 1:
-                    logger.info(
-                        "Move succeeded on retry %s/%s: '%s' -> '%s'",
-                        attempt,
-                        MOVE_RETRY_ATTEMPTS,
-                        source,
-                        destination,
-                    )
-                return
-            except OSError as exc:
-                last_error = exc
-                if attempt == MOVE_RETRY_ATTEMPTS:
-                    break
-
-                logger.warning(
-                    "Move attempt %s/%s failed for '%s' -> '%s': %s. Retrying in %.1fs.",
-                    attempt,
-                    MOVE_RETRY_ATTEMPTS,
-                    source,
-                    destination,
-                    exc,
-                    MOVE_RETRY_DELAY_SECONDS,
-                )
-                time.sleep(MOVE_RETRY_DELAY_SECONDS)
-
-        logger.error(
-            "Move failed after %s attempts for '%s' -> '%s': %s",
-            MOVE_RETRY_ATTEMPTS,
-            source,
-            destination,
-            last_error,
-        )
-        raise last_error
+    # ---------------- MAIN FILE ORGANIZATION ----------------
 
     def organize_file(self, file_path: Path, dry_run: bool = False) -> dict | None:
-        """
-        Organize a single file into its appropriate subfolder.
-        
-        Returns:
-            A log entry dict on success, or None if skipped.
-        """
         file_path = Path(file_path).resolve()
 
-        # Safety: only operate within the watch folder
+        # Safety check
         try:
             file_path.relative_to(self.watch_folder)
         except ValueError:
@@ -125,7 +85,6 @@ class Organizer:
             logger.warning(f"File no longer exists: {file_path}")
             return None
 
-        # Skip the log file itself
         if file_path.name == LOG_FILE:
             return None
 
@@ -144,15 +103,36 @@ class Organizer:
 
         if dry_run:
             print(f"  [DRY RUN] {file_path.name!r}  →  {subfolder}/")
-            logger.info(f"[DRY RUN] Would move '{file_path.name}' → {dest_file}")
             return entry
 
         dest_dir.mkdir(parents=True, exist_ok=True)
-        self._move_with_retry(file_path, dest_file)
 
+        # 🔥 RETRY LOGIC (FIXED ISSUE)
+        max_retries = 3
+
+        for attempt in range(max_retries):
+            try:
+                shutil.move(str(file_path), str(dest_file))
+                break
+
+            except PermissionError as e:
+                if attempt < max_retries - 1:
+                    logger.warning(
+                        f"File '{file_path.name}' is in use. Retrying ({attempt+1}/{max_retries})..."
+                    )
+                    time.sleep(1)
+                else:
+                    logger.error(
+                        f"Failed to move '{file_path.name}' after {max_retries} attempts: {e}"
+                    )
+                    print(f"  ⚠️ Skipped: '{file_path.name}' (file in use)")
+                    return None
+
+        # Log success
         self._append_log(entry)
         logger.info(f"Moved '{file_path.name}' → {subfolder}/")
 
+        # Notification (safe)
         if not self.silent:
             try:
                 notify(
@@ -160,23 +140,16 @@ class Organizer:
                     message=f"Moved {file_path.name} → {subfolder}/",
                 )
             except Exception as e:
-                logger.warning(
-                    "Unexpected error from notify() (%s): %s",
-                    type(e).__name__,
-                    e,
-                )
+                logger.warning(f"Notification failed: {e}")
 
         print(f"  Moved: {file_path.name!r}  →  {subfolder}/")
         return entry
 
+    # ---------------- ORGANIZE ALL ----------------
+
     def organize_all(self, dry_run: bool = False) -> list:
-        """
-        Organize all existing files in the watch folder (non-recursive).
-        
-        Returns:
-            List of log entry dicts.
-        """
         results = []
+
         files = [
             f for f in self.watch_folder.iterdir()
             if f.is_file() and f.name != LOG_FILE
@@ -187,24 +160,18 @@ class Organizer:
             return results
 
         print(f"  Found {len(files)} file(s) to organize.\n")
+
         for f in sorted(files):
             entry = self.organize_file(f, dry_run=dry_run)
             if entry:
                 results.append(entry)
 
-        if not dry_run:
-            print(f"\n  Done. {len(results)} file(s) moved.")
-        else:
-            print(f"\n  Dry run complete. {len(results)} file(s) would be moved.")
+        print(f"\n  Done. {len(results)} file(s) moved.")
         return results
 
+    # ---------------- UNDO ----------------
+
     def undo(self, steps: int = 1) -> int:
-        """
-        Undo the last N organize actions by reversing moves.
-        
-        Returns:
-            Number of files successfully restored.
-        """
         entries = self._load_log()
         real_entries = [e for e in entries if not e.get("dry_run")]
 
@@ -224,44 +191,43 @@ class Organizer:
                 continue
 
             if dest.exists():
-                print(f" Conflict detected for {dest.name},resolving...") 
+                print(f"  Conflict detected for {dest.name}, resolving...")
                 dest = self._resolve_dest(dest)
 
             dest.parent.mkdir(parents=True, exist_ok=True)
-            self._move_with_retry(src, dest)
+            shutil.move(str(src), str(dest))
+
             print(f"  Restored: {src.name!r}  →  {dest.parent.name}/")
-            logger.info(f"Undone: '{src.name}' restored to '{dest}'")
             restored += 1
 
-        # Remove undone entries from log
         remaining = real_entries[:-steps] if steps < len(real_entries) else []
-        # Preserve dry-run entries
         dry_entries = [e for e in entries if e.get("dry_run")]
+
         self._save_log(dry_entries + remaining)
 
         print(f"\n  Undo complete. {restored} file(s) restored.")
         return restored
 
-    def report(self) -> dict:
-        """
-        Generate a summary report from the log.
+    # ---------------- REPORT ----------------
 
-        Returns:
-            Dict with stats and per-category breakdown.
-        """
+    def report(self) -> dict:
         entries = [e for e in self._load_log() if not e.get("dry_run")]
 
         if not entries:
             return {"total": 0, "categories": {}}
 
-        categories: dict[str, list] = {}
+        categories = {}
+
         for e in entries:
             cat = e["category"]
             categories.setdefault(cat, []).append(e["filename"])
 
         return {
             "total": len(entries),
-            "categories": {k: {"count": len(v), "files": v} for k, v in sorted(categories.items())},
+            "categories": {
+                k: {"count": len(v), "files": v}
+                for k, v in sorted(categories.items())
+            },
             "first_run": entries[0]["timestamp"],
             "last_run": entries[-1]["timestamp"],
         }
