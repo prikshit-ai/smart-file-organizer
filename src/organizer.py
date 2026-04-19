@@ -13,6 +13,12 @@ from pathlib import Path
 from . import categorizer
 from .config import load_config
 from .notifier import notify
+from organizer.undo import (
+    HISTORY_FILE,
+    load_run_snapshot,
+    save_run_snapshot,
+    undo_last_session,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -85,7 +91,7 @@ class Organizer:
             logger.warning(f"File no longer exists: {file_path}")
             return None
 
-        if file_path.name == LOG_FILE:
+        if file_path.name in (LOG_FILE, HISTORY_FILE):
             return None
 
         subfolder = categorizer.categorize(file_path, self.custom_rules)
@@ -115,18 +121,17 @@ class Organizer:
                 shutil.move(str(file_path), str(dest_file))
                 break
 
-            except PermissionError as e:
+            except OSError as e:
                 if attempt < max_retries - 1:
                     logger.warning(
                         f"File '{file_path.name}' is in use. Retrying ({attempt+1}/{max_retries})..."
                     )
-                    time.sleep(1)
+                    time.sleep(0.5)
                 else:
                     logger.error(
                         f"Failed to move '{file_path.name}' after {max_retries} attempts: {e}"
                     )
-                    print(f"  ⚠️ Skipped: '{file_path.name}' (file in use)")
-                    return None
+                    raise
 
         # Log success
         self._append_log(entry)
@@ -152,7 +157,7 @@ class Organizer:
 
         files = [
             f for f in self.watch_folder.iterdir()
-            if f.is_file() and f.name != LOG_FILE
+            if f.is_file() and f.name not in (LOG_FILE, HISTORY_FILE)
         ]
 
         if not files:
@@ -167,11 +172,15 @@ class Organizer:
                 results.append(entry)
 
         print(f"\n  Done. {len(results)} file(s) moved.")
+        save_run_snapshot(self.watch_folder, results, dry_run=dry_run)
         return results
 
     # ---------------- UNDO ----------------
 
     def undo(self, steps: int = 1) -> int:
+        if load_run_snapshot(self.watch_folder):
+            return undo_last_session(self.watch_folder, self.log_path)
+
         entries = self._load_log()
         real_entries = [e for e in entries if not e.get("dry_run")]
 

@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 DEFAULT_CONFIG_PATH = Path.home() / ".config" / "smart-file-organizer" / "config.yaml"
 LOCAL_CONFIG_PATH = Path("config.yaml")
 
-VALID_KEYS = {"rules", "watch_folder", "silent", "dry_run"}
+VALID_KEYS = {"rules", "watch_folder", "silent", "dry_run", "notifications"}
 
 
 def load_config(config_path: str = None) -> dict:
@@ -106,3 +106,7 @@ def validate_config(config: dict, path: Path):
     dry_run = config.get("dry_run")
     if dry_run is not None and not isinstance(dry_run, bool):
         raise ValueError(f"'dry_run' must be a boolean in {path}")
+
+    notifications = config.get("notifications")
+    if notifications is not None and not isinstance(notifications, bool):
+        raise ValueError(f"'notifications' must be a boolean in {path}")
