@@ -12,6 +12,7 @@ import sys, os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from src.organizer import Organizer
+from organizer.undo import HISTORY_FILE, load_run_snapshot
 
 
 @pytest.fixture
@@ -122,10 +123,41 @@ class TestOrganizeAll:
         with patch("src.organizer.notify"):
             results = organizer.organize_all()
         assert len(results) == 3
+        assert (tmp_folder / HISTORY_FILE).exists()
+        snap = load_run_snapshot(tmp_folder)
+        assert set(snap.keys()) == {"a.jpg", "b.mp4", "c.zip"}
+        for name in snap:
+            assert "from" in snap[name] and "to" in snap[name]
 
     def test_empty_folder_returns_empty(self, organizer, tmp_folder):
         results = organizer.organize_all()
         assert results == []
+
+
+class TestSessionUndo:
+    def test_undo_restores_full_run_via_snapshot(self, organizer, tmp_folder):
+        make_file(tmp_folder, "a.jpg")
+        make_file(tmp_folder, "b.mp4")
+        with patch("src.organizer.notify"):
+            organizer.organize_all()
+        assert load_run_snapshot(tmp_folder)
+        n = organizer.undo(steps=1)
+        assert n == 2
+        assert (tmp_folder / "a.jpg").exists()
+        assert (tmp_folder / "b.mp4").exists()
+        assert not (tmp_folder / HISTORY_FILE).exists()
+
+    def test_organize_all_dry_run_does_not_write_snapshot(self, organizer, tmp_folder):
+        make_file(tmp_folder, "x.jpg")
+        with patch("src.organizer.notify"):
+            organizer.organize_all(dry_run=True)
+        assert not (tmp_folder / HISTORY_FILE).exists()
+
+    def test_single_organize_file_does_not_write_snapshot(self, organizer, tmp_folder):
+        f = make_file(tmp_folder, "photo.jpg")
+        with patch("src.organizer.notify"):
+            organizer.organize_file(f)
+        assert not (tmp_folder / HISTORY_FILE).exists()
 
 
 class TestUndo:

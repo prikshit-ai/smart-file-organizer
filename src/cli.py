@@ -5,7 +5,7 @@ cli.py - Command-line interface for Smart File Organizer.
 Commands:
   organizer watch <folder>   Watch a folder in real-time
   organizer run <folder>     Organize all files in a folder once
-  organizer undo <folder>    Undo the last organize action
+  organizer undo <folder>    Undo the last run session (or log steps if no snapshot)
   organizer report <folder>  Show an organization summary report
 """
 
@@ -123,9 +123,9 @@ def build_parser() -> argparse.ArgumentParser:
 
     # undo
     p_undo = subparsers.add_parser("undo", parents=[shared],
-                                    help="Undo the last organize action(s)")
+                                    help="Undo the last run session (snapshot), or log-based steps if none")
     p_undo.add_argument("--steps", "-n", type=int, default=1, metavar="N",
-                         help="Number of actions to undo (default: 1)")
+                         help="With no run snapshot: undo this many last moves from the log (default: 1)")
     p_undo.set_defaults(func=cmd_undo)
 
     # report

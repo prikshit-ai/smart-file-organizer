@@ -20,17 +20,23 @@ DEFAULT_RULES: dict[str, str] = {
     ".mp4": "Videos", ".mkv": "Videos", ".avi": "Videos", ".mov": "Videos",
 
     # Audio
-    ".mp3": "Audio", ".wav": "Audio", ".flac": "Audio",
+    ".mp3": "Audio", ".wav": "Audio", ".flac": "Audio", ".aac": "Audio",
 
     # Documents
     ".doc": "Documents", ".docx": "Documents", ".txt": "Documents",
     ".md": "Documents",
 
     # Code
-    ".py": "Code", ".js": "Code", ".java": "Code", ".cpp": "Code",
+    ".py": "Code", ".js": "Code", ".ts": "Code", ".java": "Code", ".cpp": "Code",
+
+    # Spreadsheets
+    ".xlsx": "Spreadsheets", ".csv": "Spreadsheets", ".xls": "Spreadsheets",
+
+    # Presentations
+    ".pptx": "Presentations", ".ppt": "Presentations",
 
     # Archives
-    ".zip": "Archives", ".rar": "Archives", ".7z": "Archives",
+    ".zip": "Archives", ".rar": "Archives", ".7z": "Archives", ".tar": "Archives",
 }
 
 # -------------------- CONTENT RULES --------------------
