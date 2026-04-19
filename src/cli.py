@@ -14,6 +14,7 @@ import argparse
 import logging
 import json
 from pathlib import Path
+from rich import print
 
 # Allow running as: python -m src.cli OR as installed command
 try:
@@ -35,8 +36,9 @@ def setup_logging(verbose: bool = False):
 
 def cmd_watch(args):
     setup_logging(args.verbose)
-    print(f"\n  Smart File Organizer — Watch Mode")
-    print(f"  {'─' * 40}")
+
+    print("\n[cyan]Watching for new files...[/cyan]")
+
     watch(
         folder=args.folder,
         config_path=args.config,
@@ -54,6 +56,8 @@ def cmd_run(args):
         print("  Mode: DRY RUN — no files will be moved\n")
     organizer = Organizer(folder, config_path=args.config, silent=args.silent)
     organizer.organize_all(dry_run=args.dry_run)
+
+    print("\n[green]✔ Sorting completed successfully[/green]")
 
 
 def cmd_undo(args):
