@@ -27,21 +27,30 @@ from organizer.undo import (
 
 logger = logging.getLogger(__name__)
 
-LOG_FILE = "organizer_log.json"
-
 
 class Organizer:
     def __init__(self, watch_folder: Path, config_path: str = None, silent: bool = False):
-        self.watch_folder = Path(watch_folder).resolve()
         self.config = load_config(config_path)
 
+        # ✅ Use watch_folder from config if provided
+        cfg_folder = self.config.get("watch_folder")
+        self.watch_folder = Path(cfg_folder or watch_folder).resolve()
+
+        # ✅ Correct notify key
         cfg_silent = bool(self.config.get("silent", False))
-        cfg_notify_off = self.config.get("notifications") is False
+        cfg_notify_off = self.config.get("notify") is False
 
         self.silent = silent or cfg_silent or cfg_notify_off
         self.custom_rules = self.config.get("rules", {})
-        self.log_path = self.watch_folder / LOG_FILE
+
+        # ✅ Use log_file from config
+        log_file = self.config.get("log_file", "organizer_log.json")
+        self.log_path = self.watch_folder / log_file
+
+        # ✅ Audit log system (from incoming branch)
         self.audit_log_path = resolve_audit_log_path(self.watch_folder, self.config)
+
+    # ---------------- AUDIT LOG ----------------
 
     def _write_audit(self, kind: str, detail: str) -> None:
         try:
@@ -109,7 +118,7 @@ class Organizer:
             self._write_audit("SKIP", f"protected file: {file_path.name}")
             return None
 
-        if file_path.name in (LOG_FILE, HISTORY_FILE):
+        if file_path.name in (self.log_path.name, HISTORY_FILE):
             self._write_audit("SKIP", f"internal file: {file_path.name}")
             return None
 
@@ -132,14 +141,13 @@ class Organizer:
 
         dest_dir.mkdir(parents=True, exist_ok=True)
 
-        # 🔥 RETRY LOGIC (FIXED ISSUE)
+        # Retry logic
         max_retries = 3
 
         for attempt in range(max_retries):
             try:
                 shutil.move(str(file_path), str(dest_file))
                 break
-
             except OSError as e:
                 if attempt < max_retries - 1:
                     logger.warning(
@@ -161,10 +169,11 @@ class Organizer:
             "MOVED",
             format_moved_line(self.watch_folder, file_path, dest_file),
         )
+
         self._append_log(entry)
         logger.info(f"Moved '{file_path.name}' → {subfolder}/")
 
-        # Notification (safe)
+        # Notification
         if not self.silent:
             try:
                 notify(
@@ -189,7 +198,7 @@ class Organizer:
             f
             for f in self.watch_folder.rglob("*")
             if f.is_file()
-            and f.name not in (LOG_FILE, HISTORY_FILE)
+            and f.name not in (self.log_path.name, HISTORY_FILE)
             and f.resolve() != self.audit_log_path.resolve()
             and self.watch_folder in f.parents
             and not any(part in [
