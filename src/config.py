@@ -10,28 +10,27 @@ logger = logging.getLogger(__name__)
 DEFAULT_CONFIG_PATH = Path.home() / ".config" / "smart-file-organizer" / "config.yaml"
 LOCAL_CONFIG_PATH = Path("config.yaml")
 
-
 VALID_KEYS = {"rules", "watch_folder", "silent", "dry_run", "notify", "log_file"}
-
 
 DEFAULT_CONFIG = {
     "watch_folder": "./watch",
     "rules": {},
     "dry_run": True,
     "notify": False,
-    "log_file": "organizer.log",
+    "log_file": "organizer_log.json",
 }
 
 
 def load_config(config_path: str = None) -> dict:
     """
     Load configuration from YAML file with validation.
+    Falls back to defaults if file is missing or invalid.
     """
 
     try:
         import yaml
     except ImportError:
-        logger.warning("PyYAML not installed. Using defaults.")
+        logger.warning("PyYAML not installed. Run 'pip install pyyaml'. Using defaults.")
         return DEFAULT_CONFIG.copy()
 
     paths_to_try = []
@@ -47,7 +46,6 @@ def load_config(config_path: str = None) -> dict:
 
                 validate_config(file_config, path)
 
-              
                 merged_config = DEFAULT_CONFIG.copy()
                 merged_config.update(file_config)
 
@@ -59,7 +57,7 @@ def load_config(config_path: str = None) -> dict:
                 logger.warning("Falling back to default configuration.")
                 return DEFAULT_CONFIG.copy()
 
-    
+    logger.info("No config file found. Using default configuration.")
     return DEFAULT_CONFIG.copy()
 
 
@@ -106,7 +104,6 @@ def validate_config(config: dict, path: Path):
     if dry_run is not None and not isinstance(dry_run, bool):
         raise ValueError(f"'dry_run' must be a boolean in {path}")
 
-  
     notify = config.get("notify")
     if notify is not None and not isinstance(notify, bool):
         raise ValueError(f"'notify' must be a boolean in {path}")

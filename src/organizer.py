@@ -21,15 +21,22 @@ LOG_FILE = "organizer_log.json"
 
 class Organizer:
     def __init__(self, watch_folder: Path, config_path: str = None, silent: bool = False):
-        self.watch_folder = Path(watch_folder).resolve()
         self.config = load_config(config_path)
 
-        cfg_silent = bool(self.config.get("silent", False))
-        cfg_notify_off = self.config.get("notifications") is False
+    # ✅ Use watch_folder from config if provided
+    cfg_folder = self.config.get("watch_folder")
+    self.watch_folder = Path(cfg_folder or watch_folder).resolve()
 
-        self.silent = silent or cfg_silent or cfg_notify_off
-        self.custom_rules = self.config.get("rules", {})
-        self.log_path = self.watch_folder / LOG_FILE
+    # ✅ Correct notify key (FIXED BUG)
+    cfg_silent = bool(self.config.get("silent", False))
+    cfg_notify_off = self.config.get("notify") is False
+
+    self.silent = silent or cfg_silent or cfg_notify_off
+    self.custom_rules = self.config.get("rules", {})
+
+    # ✅ Use log_file from config
+    log_file = self.config.get("log_file", "organizer_log.json")
+    self.log_path = self.watch_folder / log_file
 
     # ---------------- LOG HANDLING ----------------
 
