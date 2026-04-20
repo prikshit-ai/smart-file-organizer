@@ -13,30 +13,50 @@ from pathlib import Path
 from . import categorizer
 from .config import load_config
 from .notifier import notify
+from organizer.logger import (
+    append_audit_line,
+    format_moved_line,
+    resolve_audit_log_path,
+)
+from organizer.undo import (
+    HISTORY_FILE,
+    load_run_snapshot,
+    save_run_snapshot,
+    undo_last_session,
+)
 
 logger = logging.getLogger(__name__)
-
-LOG_FILE = "organizer_log.json"
 
 
 class Organizer:
     def __init__(self, watch_folder: Path, config_path: str = None, silent: bool = False):
         self.config = load_config(config_path)
 
-    # ✅ Use watch_folder from config if provided
-    cfg_folder = self.config.get("watch_folder")
-    self.watch_folder = Path(cfg_folder or watch_folder).resolve()
+        # ✅ Use watch_folder from config if provided
+        cfg_folder = self.config.get("watch_folder")
+        self.watch_folder = Path(cfg_folder or watch_folder).resolve()
 
-    # ✅ Correct notify key (FIXED BUG)
-    cfg_silent = bool(self.config.get("silent", False))
-    cfg_notify_off = self.config.get("notify") is False
+        # ✅ Correct notify key
+        cfg_silent = bool(self.config.get("silent", False))
+        cfg_notify_off = self.config.get("notify") is False
 
-    self.silent = silent or cfg_silent or cfg_notify_off
-    self.custom_rules = self.config.get("rules", {})
+        self.silent = silent or cfg_silent or cfg_notify_off
+        self.custom_rules = self.config.get("rules", {})
 
-    # ✅ Use log_file from config
-    log_file = self.config.get("log_file", "organizer_log.json")
-    self.log_path = self.watch_folder / log_file
+        # ✅ Use log_file from config
+        log_file = self.config.get("log_file", "organizer_log.json")
+        self.log_path = self.watch_folder / log_file
+
+        # ✅ Audit log system (from incoming branch)
+        self.audit_log_path = resolve_audit_log_path(self.watch_folder, self.config)
+
+    # ---------------- AUDIT LOG ----------------
+
+    def _write_audit(self, kind: str, detail: str) -> None:
+        try:
+            append_audit_line(self.audit_log_path, kind, detail)
+        except OSError as e:
+            logger.warning("Could not append audit log (%s): %s", kind, e)
 
     # ---------------- LOG HANDLING ----------------
 
@@ -86,13 +106,20 @@ class Organizer:
             file_path.relative_to(self.watch_folder)
         except ValueError:
             logger.warning(f"Refusing to move file outside watch folder: {file_path}")
+            self._write_audit("SKIP", f"outside watch folder: {file_path}")
             return None
 
         if not file_path.exists():
             logger.warning(f"File no longer exists: {file_path}")
+            self._write_audit("SKIP", f"missing: {file_path.name}")
             return None
 
-        if file_path.name == LOG_FILE:
+        if file_path.resolve() == self.audit_log_path.resolve():
+            self._write_audit("SKIP", f"protected file: {file_path.name}")
+            return None
+
+        if file_path.name in (self.log_path.name, HISTORY_FILE):
+            self._write_audit("SKIP", f"internal file: {file_path.name}")
             return None
 
         subfolder = categorizer.categorize(file_path, self.custom_rules)
@@ -114,32 +141,39 @@ class Organizer:
 
         dest_dir.mkdir(parents=True, exist_ok=True)
 
-        # 🔥 RETRY LOGIC (FIXED ISSUE)
+        # Retry logic
         max_retries = 3
 
         for attempt in range(max_retries):
             try:
                 shutil.move(str(file_path), str(dest_file))
                 break
-
-            except PermissionError as e:
+            except OSError as e:
                 if attempt < max_retries - 1:
                     logger.warning(
                         f"File '{file_path.name}' is in use. Retrying ({attempt+1}/{max_retries})..."
                     )
-                    time.sleep(1)
+                    time.sleep(0.5)
                 else:
                     logger.error(
                         f"Failed to move '{file_path.name}' after {max_retries} attempts: {e}"
                     )
-                    print(f"  ⚠️ Skipped: '{file_path.name}' (file in use)")
-                    return None
+                    self._write_audit(
+                        "ERROR",
+                        f"failed to move {file_path.name!r} after {max_retries} attempts: {e}",
+                    )
+                    raise
 
         # Log success
+        self._write_audit(
+            "MOVED",
+            format_moved_line(self.watch_folder, file_path, dest_file),
+        )
+
         self._append_log(entry)
         logger.info(f"Moved '{file_path.name}' → {subfolder}/")
 
-        # Notification (safe)
+        # Notification
         if not self.silent:
             try:
                 notify(
@@ -158,8 +192,11 @@ class Organizer:
         results = []
 
         files = [
-            f for f in self.watch_folder.iterdir()
-            if f.is_file() and f.name != LOG_FILE
+            f
+            for f in self.watch_folder.iterdir()
+            if f.is_file()
+            and f.name not in (self.log_path.name, HISTORY_FILE)
+            and f.resolve() != self.audit_log_path.resolve()
         ]
 
         if not files:
@@ -174,11 +211,15 @@ class Organizer:
                 results.append(entry)
 
         print(f"\n  Done. {len(results)} file(s) moved.")
+        save_run_snapshot(self.watch_folder, results, dry_run=dry_run)
         return results
 
     # ---------------- UNDO ----------------
 
     def undo(self, steps: int = 1) -> int:
+        if load_run_snapshot(self.watch_folder):
+            return undo_last_session(self.watch_folder, self.log_path)
+
         entries = self._load_log()
         real_entries = [e for e in entries if not e.get("dry_run")]
 

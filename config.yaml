@@ -4,12 +4,8 @@
 # Custom file extension → folder name rules.
 # These OVERRIDE the built-in defaults.
 # Format:  ".extension": "FolderName"
-rules:
-  # Examples (uncomment to enable):
-  # ".mp4": "Videos/Work"          # Put all MP4s in a Work subfolder
-  # ".pdf": "Documents/PDFs"       # Override smart PDF detection
-  # ".blend": "3DFiles"            # Custom extension not in defaults
-  # ".torrent": "Torrents"
+# Examples:  ".mp4": "Videos/Work"   ".pdf": "Documents/PDFs"   ".torrent": "Torrents"
+rules: {}
 
 # Optional: set a default watch folder (used if no folder argument is given)
 # watch_folder: "/Users/yourname/Downloads"
@@ -23,3 +19,8 @@ rules:
 
 # Always run in dry-run mode (safe preview, never moves files)
 # dry_run: false
+
+# Human-readable move audit log (default: organizer.log in the watch folder).
+# Relative paths are resolved against the watch folder; absolute paths are allowed.
+# organizer_log: "organizer.log"
+# organizer_log: "logs/organizer.log"
