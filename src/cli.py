@@ -14,6 +14,8 @@ import argparse
 import logging
 import json
 from pathlib import Path
+from rich import print
+from rich.table import Table
 
 # Allow running as: python -m src.cli OR as installed command
 try:
@@ -35,8 +37,10 @@ def setup_logging(verbose: bool = False):
 
 def cmd_watch(args):
     setup_logging(args.verbose)
-    print(f"\n  Smart File Organizer — Watch Mode")
-    print(f"  {'─' * 40}")
+
+    print("\n[bold cyan]Smart File Organizer — Watch Mode[/bold cyan]")
+    print("[green]Watching for new files...[/green]\n")
+
     watch(
         folder=args.folder,
         config_path=args.config,
@@ -48,19 +52,41 @@ def cmd_watch(args):
 def cmd_run(args):
     setup_logging(args.verbose)
     folder = Path(args.folder).resolve()
-    print(f"\n  Smart File Organizer — Run Mode")
-    print(f"  {'─' * 40}")
+
+    print("\n[bold cyan]Smart File Organizer — Run Mode[/bold cyan]")
+    print("─" * 40)
+
     if args.dry_run:
-        print("  Mode: DRY RUN — no files will be moved\n")
+        print("[yellow]Mode: DRY RUN — no files will be moved[/yellow]\n")
+
     organizer = Organizer(folder, config_path=args.config, silent=args.silent)
-    organizer.organize_all(dry_run=args.dry_run)
+
+    # ✅ Capture results
+    results = organizer.organize_all(dry_run=args.dry_run)
+
+    if not results:
+        print("[yellow]No files organized.[/yellow]")
+        return
+
+    # ✅ Create summary table
+    table = Table(title="Organization Summary")
+    table.add_column("File", style="cyan")
+    table.add_column("Category", style="green")
+
+    for entry in results:
+        table.add_row(entry["filename"], entry["category"])
+
+    print(table)
+    print(f"\n[bold green]✔ Organized {len(results)} file(s)[/bold green]")
 
 
 def cmd_undo(args):
     setup_logging(args.verbose)
     folder = Path(args.folder).resolve()
-    print(f"\n  Smart File Organizer — Undo")
-    print(f"  {'─' * 40}")
+
+    print("\n[bold cyan]Smart File Organizer — Undo[/bold cyan]")
+    print("─" * 40)
+
     organizer = Organizer(folder, config_path=args.config)
     organizer.undo(steps=args.steps)
 
@@ -75,19 +101,23 @@ def cmd_report(args):
         print(json.dumps(report, indent=2))
         return
 
-    print(f"\n  Smart File Organizer — Report")
-    print(f"  {'─' * 40}")
+    print("\n[bold cyan]Smart File Organizer — Report[/bold cyan]")
+    print("─" * 40)
+
     if report["total"] == 0:
-        print("  No files have been organized yet.\n")
+        print("[yellow]No files have been organized yet.[/yellow]\n")
         return
 
-    print(f"  Total files organized : {report['total']}")
-    print(f"  First activity        : {report.get('first_run', 'N/A')}")
-    print(f"  Last activity         : {report.get('last_run', 'N/A')}")
-    print(f"\n  {'Category':<30} {'Count':>6}")
-    print(f"  {'─' * 38}")
+    print(f"Total files organized : {report['total']}")
+    print(f"First activity        : {report.get('first_run', 'N/A')}")
+    print(f"Last activity         : {report.get('last_run', 'N/A')}")
+
+    print(f"\n{'Category':<30} {'Count':>6}")
+    print("─" * 38)
+
     for cat, info in report["categories"].items():
-        print(f"  {cat:<30} {info['count']:>6}")
+        print(f"{cat:<30} {info['count']:>6}")
+
     print()
 
 
@@ -108,29 +138,47 @@ def build_parser() -> argparse.ArgumentParser:
     shared.add_argument("--verbose", "-v", action="store_true", help="Enable debug logging")
 
     # watch
-    p_watch = subparsers.add_parser("watch", parents=[shared],
-                                     help="Watch a folder and organize files in real-time")
+    p_watch = subparsers.add_parser(
+        "watch",
+        parents=[shared],
+        help="Watch a folder and organize files in real-time",
+    )
     p_watch.add_argument("--dry-run", action="store_true", help="Preview moves without executing")
     p_watch.add_argument("--silent", action="store_true", help="Disable desktop notifications")
     p_watch.set_defaults(func=cmd_watch)
 
     # run
-    p_run = subparsers.add_parser("run", parents=[shared],
-                                   help="Organize all existing files in a folder once")
+    p_run = subparsers.add_parser(
+        "run",
+        parents=[shared],
+        help="Organize all existing files in a folder once",
+    )
     p_run.add_argument("--dry-run", action="store_true", help="Preview moves without executing")
     p_run.add_argument("--silent", action="store_true", help="Disable desktop notifications")
     p_run.set_defaults(func=cmd_run)
 
     # undo
-    p_undo = subparsers.add_parser("undo", parents=[shared],
-                                    help="Undo the last run session (snapshot), or log-based steps if none")
-    p_undo.add_argument("--steps", "-n", type=int, default=1, metavar="N",
-                         help="With no run snapshot: undo this many last moves from the log (default: 1)")
+    p_undo = subparsers.add_parser(
+        "undo",
+        parents=[shared],
+        help="Undo the last run session (snapshot), or log-based steps if none",
+    )
+    p_undo.add_argument(
+        "--steps",
+        "-n",
+        type=int,
+        default=1,
+        metavar="N",
+        help="With no run snapshot: undo this many last moves from the log (default: 1)",
+    )
     p_undo.set_defaults(func=cmd_undo)
 
     # report
-    p_report = subparsers.add_parser("report", parents=[shared],
-                                      help="Show an organization summary report")
+    p_report = subparsers.add_parser(
+        "report",
+        parents=[shared],
+        help="Show an organization summary report",
+    )
     p_report.add_argument("--json", action="store_true", help="Output report as JSON")
     p_report.set_defaults(func=cmd_report)
 
@@ -143,7 +191,7 @@ def main():
     try:
         args.func(args)
     except FileNotFoundError as e:
-        print(f"\n  Error: {e}", file=sys.stderr)
+        print(f"\n[red]Error:[/red] {e}", file=sys.stderr)
         sys.exit(1)
     except KeyboardInterrupt:
         pass
