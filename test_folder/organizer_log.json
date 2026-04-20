@@ -102,5 +102,45 @@
     "destination": "/Users/prikshitgaur/Desktop/ost/smart-file-organizer/test_folder/Videos/video_1.mp4",
     "category": "Videos",
     "dry_run": false
+  },
+  {
+    "timestamp": "2026-04-20T17:02:55.480693",
+    "filename": "file1.pdf",
+    "source": "/Users/prikshitgaur/Desktop/ost/smart-file-organizer/test_folder/PDFs/General/file1.pdf",
+    "destination": "/Users/prikshitgaur/Desktop/ost/smart-file-organizer/test_folder/Documents/file1.pdf",
+    "category": "Documents",
+    "dry_run": false
+  },
+  {
+    "timestamp": "2026-04-20T17:02:55.482161",
+    "filename": "invoice.pdf",
+    "source": "/Users/prikshitgaur/Desktop/ost/smart-file-organizer/test_folder/PDFs/General/invoice.pdf",
+    "destination": "/Users/prikshitgaur/Desktop/ost/smart-file-organizer/test_folder/Documents/Invoices/invoice.pdf",
+    "category": "Documents/Invoices",
+    "dry_run": false
+  },
+  {
+    "timestamp": "2026-04-20T17:02:55.482923",
+    "filename": "resume.pdf",
+    "source": "/Users/prikshitgaur/Desktop/ost/smart-file-organizer/test_folder/PDFs/General/resume.pdf",
+    "destination": "/Users/prikshitgaur/Desktop/ost/smart-file-organizer/test_folder/Documents/Resumes/resume.pdf",
+    "category": "Documents/Resumes",
+    "dry_run": false
+  },
+  {
+    "timestamp": "2026-04-20T17:02:55.483949",
+    "filename": "invoice.pdf",
+    "source": "/Users/prikshitgaur/Desktop/ost/smart-file-organizer/test_folder/PDFs/Invoices/invoice.pdf",
+    "destination": "/Users/prikshitgaur/Desktop/ost/smart-file-organizer/test_folder/Documents/Invoices/invoice_1.pdf",
+    "category": "Documents/Invoices",
+    "dry_run": false
+  },
+  {
+    "timestamp": "2026-04-20T17:02:55.484801",
+    "filename": "resume.pdf",
+    "source": "/Users/prikshitgaur/Desktop/ost/smart-file-organizer/test_folder/PDFs/Resumes/resume.pdf",
+    "destination": "/Users/prikshitgaur/Desktop/ost/smart-file-organizer/test_folder/Documents/Resumes/resume_1.pdf",
+    "category": "Documents/Resumes",
+    "dry_run": false
   }
 ]

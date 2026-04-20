@@ -179,16 +179,24 @@ class Organizer:
 
     # ---------------- ORGANIZE ALL ----------------
 
+    # ---------------- ORGANIZE ALL ----------------
+
     def organize_all(self, dry_run: bool = False) -> list:
         results = []
 
+    # 🔥 Recursive scan + skip already organized folders
         files = [
             f
-            for f in self.watch_folder.iterdir()
+            for f in self.watch_folder.rglob("*")
             if f.is_file()
             and f.name not in (LOG_FILE, HISTORY_FILE)
             and f.resolve() != self.audit_log_path.resolve()
-        ]
+            and self.watch_folder in f.parents
+            and not any(part in [
+                "Documents", "Images", "Videos", "Audio",
+                "Code", "Archives", "Spreadsheets", "Presentations"
+         ] for part in f.parts)
+     ]
 
         if not files:
             print("  No files to organize.")
