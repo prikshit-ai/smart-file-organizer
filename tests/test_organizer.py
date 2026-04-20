@@ -3,6 +3,7 @@ test_organizer.py - Unit tests for the Organizer class.
 """
 
 import json
+import re
 import pytest
 import shutil
 from pathlib import Path
@@ -235,3 +236,63 @@ class TestReport:
         assert r["total"] == 3
         assert r["categories"]["Images"]["count"] == 2
         assert r["categories"]["Videos"]["count"] == 1
+
+
+MOVED_LINE = re.compile(
+    r"^\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\] MOVED: .+ → .+\n?$",
+    re.MULTILINE,
+)
+
+
+class TestAuditLog:
+    def test_moved_line_written_to_default_organizer_log(self, organizer, tmp_folder):
+        f = make_file(tmp_folder, "report.pdf")
+        with patch("src.organizer.notify"), \
+             patch("src.categorizer._extract_pdf_text", return_value=""):
+            organizer.organize_file(f)
+        audit = tmp_folder / "organizer.log"
+        assert audit.exists()
+        text = audit.read_text(encoding="utf-8")
+        assert "MOVED:" in text
+        assert "report.pdf" in text
+        assert "→" in text
+        assert MOVED_LINE.search(text)
+
+    def test_custom_audit_log_path_from_config(self, tmp_folder):
+        custom = tmp_folder / "logs" / "my-audit.log"
+        cfg = tmp_folder / "cfg.yaml"
+        cfg.write_text('organizer_log: "logs/my-audit.log"\n')
+        org = Organizer(tmp_folder, config_path=str(cfg), silent=True)
+        f = make_file(tmp_folder, "photo.jpg")
+        with patch("src.organizer.notify"):
+            org.organize_file(f)
+        assert custom.exists()
+        assert "MOVED:" in custom.read_text(encoding="utf-8")
+
+    def test_skip_outside_watch_folder_is_audited(self, organizer, tmp_path):
+        outside = tmp_path / "nope.jpg"
+        outside.write_text("x")
+        organizer.organize_file(outside)
+        audit = organizer.watch_folder / "organizer.log"
+        text = audit.read_text(encoding="utf-8")
+        assert "SKIP:" in text
+        assert "outside watch folder" in text
+
+    def test_skip_internal_json_log(self, organizer, tmp_folder):
+        log = make_file(tmp_folder, "organizer_log.json", "{}")
+        organizer.organize_file(log)
+        audit = tmp_folder / "organizer.log"
+        assert "SKIP:" in audit.read_text(encoding="utf-8")
+        assert "internal file" in audit.read_text(encoding="utf-8")
+
+    def test_error_logged_when_move_exhausts_retries(self, organizer, tmp_folder):
+        f = make_file(tmp_folder, "photo.jpg")
+        with patch("src.organizer.time.sleep"), \
+             patch("src.organizer.notify"), \
+             patch("src.organizer.shutil.move", side_effect=OSError("locked")):
+            with pytest.raises(OSError):
+                organizer.organize_file(f)
+        audit = tmp_folder / "organizer.log"
+        body = audit.read_text(encoding="utf-8")
+        assert "ERROR:" in body
+        assert "photo.jpg" in body

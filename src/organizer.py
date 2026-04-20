@@ -13,6 +13,11 @@ from pathlib import Path
 from . import categorizer
 from .config import load_config
 from .notifier import notify
+from organizer.logger import (
+    append_audit_line,
+    format_moved_line,
+    resolve_audit_log_path,
+)
 from organizer.undo import (
     HISTORY_FILE,
     load_run_snapshot,
@@ -36,6 +41,13 @@ class Organizer:
         self.silent = silent or cfg_silent or cfg_notify_off
         self.custom_rules = self.config.get("rules", {})
         self.log_path = self.watch_folder / LOG_FILE
+        self.audit_log_path = resolve_audit_log_path(self.watch_folder, self.config)
+
+    def _write_audit(self, kind: str, detail: str) -> None:
+        try:
+            append_audit_line(self.audit_log_path, kind, detail)
+        except OSError as e:
+            logger.warning("Could not append audit log (%s): %s", kind, e)
 
     # ---------------- LOG HANDLING ----------------
 
@@ -85,13 +97,20 @@ class Organizer:
             file_path.relative_to(self.watch_folder)
         except ValueError:
             logger.warning(f"Refusing to move file outside watch folder: {file_path}")
+            self._write_audit("SKIP", f"outside watch folder: {file_path}")
             return None
 
         if not file_path.exists():
             logger.warning(f"File no longer exists: {file_path}")
+            self._write_audit("SKIP", f"missing: {file_path.name}")
+            return None
+
+        if file_path.resolve() == self.audit_log_path.resolve():
+            self._write_audit("SKIP", f"protected file: {file_path.name}")
             return None
 
         if file_path.name in (LOG_FILE, HISTORY_FILE):
+            self._write_audit("SKIP", f"internal file: {file_path.name}")
             return None
 
         subfolder = categorizer.categorize(file_path, self.custom_rules)
@@ -131,9 +150,17 @@ class Organizer:
                     logger.error(
                         f"Failed to move '{file_path.name}' after {max_retries} attempts: {e}"
                     )
+                    self._write_audit(
+                        "ERROR",
+                        f"failed to move {file_path.name!r} after {max_retries} attempts: {e}",
+                    )
                     raise
 
         # Log success
+        self._write_audit(
+            "MOVED",
+            format_moved_line(self.watch_folder, file_path, dest_file),
+        )
         self._append_log(entry)
         logger.info(f"Moved '{file_path.name}' → {subfolder}/")
 
@@ -156,8 +183,11 @@ class Organizer:
         results = []
 
         files = [
-            f for f in self.watch_folder.iterdir()
-            if f.is_file() and f.name not in (LOG_FILE, HISTORY_FILE)
+            f
+            for f in self.watch_folder.iterdir()
+            if f.is_file()
+            and f.name not in (LOG_FILE, HISTORY_FILE)
+            and f.resolve() != self.audit_log_path.resolve()
         ]
 
         if not files:

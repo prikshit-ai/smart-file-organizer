@@ -19,3 +19,8 @@ rules: {}
 
 # Always run in dry-run mode (safe preview, never moves files)
 # dry_run: false
+
+# Human-readable move audit log (default: organizer.log in the watch folder).
+# Relative paths are resolved against the watch folder; absolute paths are allowed.
+# organizer_log: "organizer.log"
+# organizer_log: "logs/organizer.log"
