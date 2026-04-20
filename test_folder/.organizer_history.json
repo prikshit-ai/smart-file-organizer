@@ -1,0 +1,14 @@
+{
+  "file1.pdf": {
+    "from": "/Users/prikshitgaur/Desktop/ost/smart-file-organizer/test_folder/PDFs/General/file1.pdf",
+    "to": "/Users/prikshitgaur/Desktop/ost/smart-file-organizer/test_folder/Documents/file1.pdf"
+  },
+  "invoice.pdf": {
+    "from": "/Users/prikshitgaur/Desktop/ost/smart-file-organizer/test_folder/PDFs/Invoices/invoice.pdf",
+    "to": "/Users/prikshitgaur/Desktop/ost/smart-file-organizer/test_folder/Documents/Invoices/invoice_1.pdf"
+  },
+  "resume.pdf": {
+    "from": "/Users/prikshitgaur/Desktop/ost/smart-file-organizer/test_folder/PDFs/Resumes/resume.pdf",
+    "to": "/Users/prikshitgaur/Desktop/ost/smart-file-organizer/test_folder/Documents/Resumes/resume_1.pdf"
+  }
+}

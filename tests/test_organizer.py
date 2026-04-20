@@ -3,6 +3,7 @@ test_organizer.py - Unit tests for the Organizer class.
 """
 
 import json
+import re
 import pytest
 import shutil
 from pathlib import Path
@@ -12,6 +13,7 @@ import sys, os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from src.organizer import Organizer
+from organizer.undo import HISTORY_FILE, load_run_snapshot
 
 
 @pytest.fixture
@@ -122,10 +124,41 @@ class TestOrganizeAll:
         with patch("src.organizer.notify"):
             results = organizer.organize_all()
         assert len(results) == 3
+        assert (tmp_folder / HISTORY_FILE).exists()
+        snap = load_run_snapshot(tmp_folder)
+        assert set(snap.keys()) == {"a.jpg", "b.mp4", "c.zip"}
+        for name in snap:
+            assert "from" in snap[name] and "to" in snap[name]
 
     def test_empty_folder_returns_empty(self, organizer, tmp_folder):
         results = organizer.organize_all()
         assert results == []
+
+
+class TestSessionUndo:
+    def test_undo_restores_full_run_via_snapshot(self, organizer, tmp_folder):
+        make_file(tmp_folder, "a.jpg")
+        make_file(tmp_folder, "b.mp4")
+        with patch("src.organizer.notify"):
+            organizer.organize_all()
+        assert load_run_snapshot(tmp_folder)
+        n = organizer.undo(steps=1)
+        assert n == 2
+        assert (tmp_folder / "a.jpg").exists()
+        assert (tmp_folder / "b.mp4").exists()
+        assert not (tmp_folder / HISTORY_FILE).exists()
+
+    def test_organize_all_dry_run_does_not_write_snapshot(self, organizer, tmp_folder):
+        make_file(tmp_folder, "x.jpg")
+        with patch("src.organizer.notify"):
+            organizer.organize_all(dry_run=True)
+        assert not (tmp_folder / HISTORY_FILE).exists()
+
+    def test_single_organize_file_does_not_write_snapshot(self, organizer, tmp_folder):
+        f = make_file(tmp_folder, "photo.jpg")
+        with patch("src.organizer.notify"):
+            organizer.organize_file(f)
+        assert not (tmp_folder / HISTORY_FILE).exists()
 
 
 class TestUndo:
@@ -203,3 +236,63 @@ class TestReport:
         assert r["total"] == 3
         assert r["categories"]["Images"]["count"] == 2
         assert r["categories"]["Videos"]["count"] == 1
+
+
+MOVED_LINE = re.compile(
+    r"^\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\] MOVED: .+ → .+\n?$",
+    re.MULTILINE,
+)
+
+
+class TestAuditLog:
+    def test_moved_line_written_to_default_organizer_log(self, organizer, tmp_folder):
+        f = make_file(tmp_folder, "report.pdf")
+        with patch("src.organizer.notify"), \
+             patch("src.categorizer._extract_pdf_text", return_value=""):
+            organizer.organize_file(f)
+        audit = tmp_folder / "organizer.log"
+        assert audit.exists()
+        text = audit.read_text(encoding="utf-8")
+        assert "MOVED:" in text
+        assert "report.pdf" in text
+        assert "→" in text
+        assert MOVED_LINE.search(text)
+
+    def test_custom_audit_log_path_from_config(self, tmp_folder):
+        custom = tmp_folder / "logs" / "my-audit.log"
+        cfg = tmp_folder / "cfg.yaml"
+        cfg.write_text('organizer_log: "logs/my-audit.log"\n')
+        org = Organizer(tmp_folder, config_path=str(cfg), silent=True)
+        f = make_file(tmp_folder, "photo.jpg")
+        with patch("src.organizer.notify"):
+            org.organize_file(f)
+        assert custom.exists()
+        assert "MOVED:" in custom.read_text(encoding="utf-8")
+
+    def test_skip_outside_watch_folder_is_audited(self, organizer, tmp_path):
+        outside = tmp_path / "nope.jpg"
+        outside.write_text("x")
+        organizer.organize_file(outside)
+        audit = organizer.watch_folder / "organizer.log"
+        text = audit.read_text(encoding="utf-8")
+        assert "SKIP:" in text
+        assert "outside watch folder" in text
+
+    def test_skip_internal_json_log(self, organizer, tmp_folder):
+        log = make_file(tmp_folder, "organizer_log.json", "{}")
+        organizer.organize_file(log)
+        audit = tmp_folder / "organizer.log"
+        assert "SKIP:" in audit.read_text(encoding="utf-8")
+        assert "internal file" in audit.read_text(encoding="utf-8")
+
+    def test_error_logged_when_move_exhausts_retries(self, organizer, tmp_folder):
+        f = make_file(tmp_folder, "photo.jpg")
+        with patch("src.organizer.time.sleep"), \
+             patch("src.organizer.notify"), \
+             patch("src.organizer.shutil.move", side_effect=OSError("locked")):
+            with pytest.raises(OSError):
+                organizer.organize_file(f)
+        audit = tmp_folder / "organizer.log"
+        body = audit.read_text(encoding="utf-8")
+        assert "ERROR:" in body
+        assert "photo.jpg" in body
