@@ -117,11 +117,14 @@ class TestOrganizeFile:
 
 
 class TestOrganizeAll:
-    def test_organizes_multiple_files(self, organizer, tmp_folder):
+    def test_organizes_multiple_files(self, tmp_folder):
+        cfg = tmp_folder.parent / "cfg.yaml"
+        cfg.write_text("notify: true\n")
+        organizer = Organizer(tmp_folder, config_path=str(cfg), silent=False)
         make_file(tmp_folder, "a.jpg")
         make_file(tmp_folder, "b.mp4")
         make_file(tmp_folder, "c.zip")
-        with patch("src.organizer.notify"):
+        with patch("src.organizer.notify") as mock_notify:
             results = organizer.organize_all()
         assert len(results) == 3
         assert (tmp_folder / HISTORY_FILE).exists()
@@ -129,6 +132,10 @@ class TestOrganizeAll:
         assert set(snap.keys()) == {"a.jpg", "b.mp4", "c.zip"}
         for name in snap:
             assert "from" in snap[name] and "to" in snap[name]
+        mock_notify.assert_called_once_with(
+            title="Smart File Organizer",
+            message="Moved 3 files across 3 categories",
+        )
 
     def test_empty_folder_returns_empty(self, organizer, tmp_folder):
         results = organizer.organize_all()
@@ -206,6 +213,15 @@ class TestNotifications:
     def test_config_notifications_false_skips_notify(self, tmp_folder):
         cfg = tmp_folder / "cfg.yaml"
         cfg.write_text("notifications: false\n")
+        org = Organizer(tmp_folder, config_path=str(cfg), silent=False)
+        f = make_file(tmp_folder, "photo.jpg")
+        with patch("src.organizer.notify") as mock_notify:
+            org.organize_file(f)
+        mock_notify.assert_not_called()
+
+    def test_config_notify_false_skips_notify(self, tmp_folder):
+        cfg = tmp_folder / "cfg.yaml"
+        cfg.write_text("notify: false\n")
         org = Organizer(tmp_folder, config_path=str(cfg), silent=False)
         f = make_file(tmp_folder, "photo.jpg")
         with patch("src.organizer.notify") as mock_notify:

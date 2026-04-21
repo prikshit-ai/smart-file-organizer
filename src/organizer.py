@@ -36,11 +36,17 @@ class Organizer:
         cfg_folder = self.config.get("watch_folder")
         self.watch_folder = Path(cfg_folder or watch_folder).resolve()
 
-        # ✅ Correct notify key
         cfg_silent = bool(self.config.get("silent", False))
-        cfg_notify_off = self.config.get("notify") is False
+        cfg_notify = self.config.get("notify")
+        cfg_notifications = self.config.get("notifications")
+        if isinstance(cfg_notify, bool):
+            self.notifications_enabled = cfg_notify
+        elif isinstance(cfg_notifications, bool):
+            self.notifications_enabled = cfg_notifications
+        else:
+            self.notifications_enabled = True
 
-        self.silent = silent or cfg_silent or cfg_notify_off
+        self.silent = silent or cfg_silent or not self.notifications_enabled
         self.custom_rules = self.config.get("rules", {})
 
         # ✅ Use log_file from config
@@ -98,7 +104,12 @@ class Organizer:
 
     # ---------------- MAIN FILE ORGANIZATION ----------------
 
-    def organize_file(self, file_path: Path, dry_run: bool = False) -> dict | None:
+    def organize_file(
+        self,
+        file_path: Path,
+        dry_run: bool = False,
+        notify_on_success: bool = True,
+    ) -> dict | None:
         file_path = Path(file_path).resolve()
 
         # Safety check
@@ -175,8 +186,7 @@ class Organizer:
         self._append_log(entry)
         logger.info(f"Moved '{file_path.name}' → {subfolder}/")
 
-        # Notification
-        if not self.silent:
+        if notify_on_success and not self.silent:
             try:
                 notify(
                     title="File Organizer",
@@ -187,10 +197,6 @@ class Organizer:
 
         print(f"  Moved: {file_path.name!r}  →  {subfolder}/")
         return entry
-
-    # ---------------- ORGANIZE ALL ----------------
-
-    # ---------------- ORGANIZE ALL ----------------
 
     def organize_all(self, dry_run: bool = False) -> list:
         results = []
@@ -213,18 +219,35 @@ class Organizer:
             print("  No files to organize.")
             return results
 
-        if dry_run:
-           print(f"\n  Preview: {len(results)} file(s) would be moved.")
-        else:
-           print(f"\n  Done. {len(results)} file(s) moved.")
-
         for f in sorted(files):
-            entry = self.organize_file(f, dry_run=dry_run)
+            entry = self.organize_file(
+                f,
+                dry_run=dry_run,
+                notify_on_success=False,
+            )
             if entry:
                 results.append(entry)
 
-        print(f"\n  Done. {len(results)} file(s) moved.")
         save_run_snapshot(self.watch_folder, results, dry_run=dry_run)
+
+        if not dry_run and results and not self.silent:
+            category_count = len({entry["category"] for entry in results})
+            try:
+                notify(
+                    title="Smart File Organizer",
+                    message=f"Moved {len(results)} files across {category_count} categories",
+                )
+            except Exception as e:
+                logger.warning(
+                    "Unexpected error from notify() (%s): %s",
+                    type(e).__name__,
+                    e,
+                )
+
+        if not dry_run:
+            print(f"\n  Done. {len(results)} file(s) moved.")
+        else:
+            print(f"\n  Dry run complete. {len(results)} file(s) would be moved.")
         return results
 
     # ---------------- UNDO ----------------

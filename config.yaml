@@ -13,9 +13,9 @@ rules: {}
 # Suppress desktop notifications globally (same effect as CLI --silent)
 # silent: false
 
-# Desktop notifications on successful moves (default: true). Set false to disable
-# without using silent: true (handy if you only want to mute notifications).
-# notifications: true
+# Desktop notifications (default: true). Set false to disable without using
+# silent: true (handy if you only want to mute notifications).
+# notify: true
 
 # Always run in dry-run mode (safe preview, never moves files)
 # dry_run: false

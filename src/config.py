@@ -16,6 +16,7 @@ VALID_KEYS = {
     "silent",
     "dry_run",
     "notify",
+    "notifications",
     "log_file",
     "organizer_log",
 }
@@ -114,6 +115,10 @@ def validate_config(config: dict, path: Path):
     notify = config.get("notify")
     if notify is not None and not isinstance(notify, bool):
         raise ValueError(f"'notify' must be a boolean in {path}")
+
+    notifications = config.get("notifications")
+    if notifications is not None and not isinstance(notifications, bool):
+        raise ValueError(f"'notifications' must be a boolean in {path}")
 
     log_file = config.get("log_file")
     if log_file is not None and not isinstance(log_file, str):
