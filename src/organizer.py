@@ -136,9 +136,11 @@ class Organizer:
         }
 
         if dry_run:
-            print(f"  [DRY RUN] {file_path.name!r}  →  {subfolder}/")
+            entry["current_location"] = str(file_path.parent)
+            entry["would_move_to"] = str(dest_dir)
             return entry
 
+        
         dest_dir.mkdir(parents=True, exist_ok=True)
 
         # Retry logic
@@ -211,7 +213,10 @@ class Organizer:
             print("  No files to organize.")
             return results
 
-        print(f"  Found {len(files)} file(s) to organize.\n")
+        if dry_run:
+           print(f"\n  Preview: {len(results)} file(s) would be moved.")
+        else:
+           print(f"\n  Done. {len(results)} file(s) moved.")
 
         for f in sorted(files):
             entry = self.organize_file(f, dry_run=dry_run)
