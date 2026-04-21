@@ -17,7 +17,7 @@ setup(
     ],
     entry_points={
         "console_scripts": [
-            "organizer=src.cli:main",
+            "organizer=organizer.cli:main",
         ],
     },
     classifiers=[
