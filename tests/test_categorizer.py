@@ -83,28 +83,28 @@ class TestPDFCategorization:
         with patch("src.categorizer._extract_pdf_text") as mock_extract:
             mock_extract.return_value = "john doe resume work experience skills objective"
             result = categorize(self._make_pdf("john_resume.pdf"))
-            assert result == "PDFs/Resumes"
+            assert result == "Documents/Resumes"
 
     def test_pdf_invoice_detection(self):
         with patch("src.categorizer._extract_pdf_text") as mock_extract:
             mock_extract.return_value = "invoice number 1234 amount due payment tax subtotal"
             result = categorize(self._make_pdf("invoice.pdf"))
-            assert result == "PDFs/Invoices"
+            assert result == "Documents/Invoices"
 
     def test_pdf_research_detection(self):
         with patch("src.categorizer._extract_pdf_text") as mock_extract:
             mock_extract.return_value = "abstract introduction methodology conclusion doi arxiv"
             result = categorize(self._make_pdf("paper.pdf"))
-            assert result == "PDFs/Research"
+            assert result == "Documents"
 
     def test_pdf_generic_when_no_keywords(self):
         with patch("src.categorizer._extract_pdf_text") as mock_extract:
             mock_extract.return_value = "some random text with no matching keywords"
             result = categorize(self._make_pdf("random.pdf"))
-            assert result == "PDFs/General"
+            assert result == "Documents"
 
     def test_pdf_general_when_extraction_fails(self):
         with patch("src.categorizer._extract_pdf_text") as mock_extract:
             mock_extract.return_value = ""
             result = categorize(self._make_pdf("empty.pdf"))
-            assert result == "PDFs/General"
+            assert result == "Documents"

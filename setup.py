@@ -13,6 +13,7 @@ setup(
         "python-docx>=1.1.0",
         "PyYAML>=6.0",
         "plyer>=2.1.0",
+        "rich>=13.0.0",
     ],
     entry_points={
         "console_scripts": [
