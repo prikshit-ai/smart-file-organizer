@@ -61,24 +61,40 @@ def cmd_run(args):
 
     organizer = Organizer(folder, config_path=args.config, silent=args.silent)
 
-    # ✅ Capture results
     results = organizer.organize_all(dry_run=args.dry_run)
 
     if not results:
-        print("[yellow]No files organized.[/yellow]")
+        print("[yellow]No files found.[/yellow]")
         return
 
-    # ✅ Create summary table
-    table = Table(title="Organization Summary")
-    table.add_column("File", style="cyan")
-    table.add_column("Category", style="green")
+    # 🔥 DRY RUN TABLE
+    if args.dry_run:
+        table = Table(title="Dry Run Preview")
+        table.add_column("File", style="cyan")
+        table.add_column("Current Location", style="yellow")
+        table.add_column("Would Move To", style="green")
 
-    for entry in results:
-        table.add_row(entry["filename"], entry["category"])
+        for entry in results:
+            table.add_row(
+                entry["filename"],
+                entry.get("current_location", "-"),
+                entry.get("would_move_to", "-"),
+            )
 
-    print(table)
-    print(f"\n[bold green]✔ Organized {len(results)} file(s)[/bold green]")
+        print(table)
+        print(f"\n[bold yellow]Preview: {len(results)} file(s) would be moved[/bold yellow]")
 
+    # 🔥 NORMAL RUN TABLE
+    else:
+        table = Table(title="Organization Summary")
+        table.add_column("File", style="cyan")
+        table.add_column("Category", style="green")
+
+        for entry in results:
+            table.add_row(entry["filename"], entry["category"])
+
+        print(table)
+        print(f"\n[bold green]✔ Organized {len(results)} file(s)[/bold green]")
 
 def cmd_undo(args):
     setup_logging(args.verbose)
