@@ -15,7 +15,10 @@ import logging
 import json
 from pathlib import Path
 from rich import print
+from rich.box import ASCII
 from rich.table import Table
+
+from organizer.reporter import build_audit_summary
 
 # Allow running as: python -m src.cli OR as installed command
 try:
@@ -38,7 +41,7 @@ def setup_logging(verbose: bool = False):
 def cmd_watch(args):
     setup_logging(args.verbose)
 
-    print("\n[bold cyan]Smart File Organizer — Watch Mode[/bold cyan]")
+    print("\n[bold cyan]Smart File Organizer - Watch Mode[/bold cyan]")
     print("[green]Watching for new files...[/green]\n")
 
     watch(
@@ -53,11 +56,11 @@ def cmd_run(args):
     setup_logging(args.verbose)
     folder = Path(args.folder).resolve()
 
-    print("\n[bold cyan]Smart File Organizer — Run Mode[/bold cyan]")
-    print("─" * 40)
+    print("\n[bold cyan]Smart File Organizer - Run Mode[/bold cyan]")
+    print("-" * 40)
 
     if args.dry_run:
-        print("[yellow]Mode: DRY RUN — no files will be moved[/yellow]\n")
+        print("[yellow]Mode: DRY RUN - no files will be moved[/yellow]\n")
 
     organizer = Organizer(folder, config_path=args.config, silent=args.silent)
 
@@ -94,14 +97,14 @@ def cmd_run(args):
             table.add_row(entry["filename"], entry["category"])
 
         print(table)
-        print(f"\n[bold green]✔ Organized {len(results)} file(s)[/bold green]")
+        print(f"\n[bold green]Organized {len(results)} file(s)[/bold green]")
 
 def cmd_undo(args):
     setup_logging(args.verbose)
     folder = Path(args.folder).resolve()
 
-    print("\n[bold cyan]Smart File Organizer — Undo[/bold cyan]")
-    print("─" * 40)
+    print("\n[bold cyan]Smart File Organizer - Undo[/bold cyan]")
+    print("-" * 40)
 
     organizer = Organizer(folder, config_path=args.config)
     organizer.undo(steps=args.steps)
@@ -111,36 +114,42 @@ def cmd_report(args):
     setup_logging(args.verbose)
     folder = Path(args.folder).resolve()
     organizer = Organizer(folder, config_path=args.config)
-    report = organizer.report()
+    report = build_audit_summary(organizer.audit_log_path)
 
     if args.json:
         print(json.dumps(report, indent=2))
         return
 
-    print("\n[bold cyan]Smart File Organizer — Report[/bold cyan]")
-    print("─" * 40)
+    print("\n[bold cyan]Smart File Organizer - Report[/bold cyan]")
+    print("-" * 40)
 
     if report["total"] == 0:
-        print("[yellow]No files have been organized yet.[/yellow]\n")
+        print(
+            "[yellow]No MOVED entries found in the audit log "
+            f"({organizer.audit_log_path}).[/yellow]\n"
+        )
         return
 
-    print(f"Total files organized : {report['total']}")
-    print(f"First activity        : {report.get('first_run', 'N/A')}")
-    print(f"Last activity         : {report.get('last_run', 'N/A')}")
-
-    print(f"\n{'Category':<30} {'Count':>6}")
-    print("─" * 38)
+    table = Table(box=ASCII, show_header=True, header_style="bold")
+    table.add_column("Category", style="cyan", no_wrap=False)
+    table.add_column("Files moved", justify="right", style="green")
+    table.add_column("Last activity", style="yellow")
 
     for cat, info in report["categories"].items():
-        print(f"{cat:<30} {info['count']:>6}")
+        table.add_row(cat, str(info["count"]), info["last_activity"])
 
-    print()
+    print(table)
+    print(f"\n[bold]Total files organized (all sessions):[/bold] {report['total']}")
+    print(
+        f"[dim]First activity: {report.get('first_activity', 'N/A')}  "
+        f"|  Last activity: {report.get('last_activity', 'N/A')}[/dim]\n"
+    )
 
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="organizer",
-        description="Smart File Organizer — auto-sort files into categorized subfolders.",
+        description="Smart File Organizer - auto-sort files into categorized subfolders.",
     )
     parser.add_argument("--version", action="version", version="1.0.0")
 

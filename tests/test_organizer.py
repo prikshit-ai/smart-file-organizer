@@ -43,12 +43,12 @@ class TestOrganizeFile:
         assert (tmp_folder / "Images" / "photo.jpg").exists()
         assert not f.exists()
 
-    def test_moves_pdf_to_pdfs_folder(self, organizer, tmp_folder):
+    def test_moves_pdf_to_documents_folder(self, organizer, tmp_folder):
         f = make_file(tmp_folder, "doc.pdf")
         with patch("src.organizer.notify"), \
              patch("src.categorizer._extract_pdf_text", return_value=""):
             organizer.organize_file(f)
-        assert (tmp_folder / "PDFs" / "General" / "doc.pdf").exists()
+        assert (tmp_folder / "Documents" / "doc.pdf").exists()
 
     def test_dry_run_does_not_move(self, organizer, tmp_folder):
         f = make_file(tmp_folder, "photo.jpg")
@@ -220,6 +220,33 @@ class TestNotifications:
         with patch("src.organizer.notify") as mock_notify:
             org.organize_file(f)
         mock_notify.assert_not_called()
+
+
+class TestReporter:
+    def test_parse_and_summarize_audit_log(self):
+        from organizer.reporter import parse_audit_log_text, summarize_moves
+
+        log = """[2026-04-17 10:00:00] MOVED: a.jpg → Images/a.jpg
+[2026-04-18 12:00:00] MOVED: b.jpg → Images/b.jpg
+[2026-04-17 09:00:00] SKIP: ignored
+[2026-04-18 11:00:00] MOVED: d.pdf → Documents/d.pdf
+"""
+        moves = parse_audit_log_text(log)
+        assert len(moves) == 3
+        s = summarize_moves(moves)
+        assert s["total"] == 3
+        assert s["categories"]["Images"]["count"] == 2
+        assert s["categories"]["Images"]["last_activity"] == "2026-04-18"
+        assert s["categories"]["Documents"]["last_activity"] == "2026-04-18"
+        assert s["first_activity"] == "2026-04-17"
+        assert s["last_activity"] == "2026-04-18"
+
+    def test_build_audit_summary_missing_file(self, tmp_path):
+        from organizer.reporter import build_audit_summary
+
+        s = build_audit_summary(tmp_path / "missing.log")
+        assert s["total"] == 0
+        assert s["categories"] == {}
 
 
 class TestReport:

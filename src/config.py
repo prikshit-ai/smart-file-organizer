@@ -10,10 +10,17 @@ logger = logging.getLogger(__name__)
 DEFAULT_CONFIG_PATH = Path.home() / ".config" / "smart-file-organizer" / "config.yaml"
 LOCAL_CONFIG_PATH = Path("config.yaml")
 
-VALID_KEYS = {"rules", "watch_folder", "silent", "dry_run", "notify", "log_file"}
+VALID_KEYS = {
+    "rules",
+    "watch_folder",
+    "silent",
+    "dry_run",
+    "notify",
+    "log_file",
+    "organizer_log",
+}
 
 DEFAULT_CONFIG = {
-    "watch_folder": "./watch",
     "rules": {},
     "dry_run": True,
     "notify": False,
@@ -111,3 +118,7 @@ def validate_config(config: dict, path: Path):
     log_file = config.get("log_file")
     if log_file is not None and not isinstance(log_file, str):
         raise ValueError(f"'log_file' must be a string in {path}")
+
+    organizer_log = config.get("organizer_log")
+    if organizer_log is not None and not isinstance(organizer_log, str):
+        raise ValueError(f"'organizer_log' must be a string in {path}")
