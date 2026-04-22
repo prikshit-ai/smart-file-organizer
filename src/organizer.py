@@ -50,6 +50,12 @@ class Organizer:
         # ✅ Audit log system (from incoming branch)
         self.audit_log_path = resolve_audit_log_path(self.watch_folder, self.config)
 
+        # ✅ ADD THIS (Step 1)
+        self.exclude_exts = []
+        self.skipped_files = []
+
+        
+
     # ---------------- AUDIT LOG ----------------
 
     def _write_audit(self, kind: str, detail: str) -> None:
@@ -213,17 +219,26 @@ class Organizer:
             print("  No files to organize.")
             return results
 
+        for f in sorted(files):
+            if f.suffix.lower() in self.exclude_exts:
+                self.skipped_files.append(f)
+                continue
+            entry = self.organize_file(f, dry_run=dry_run)
+            if entry:
+                results.append(entry)
+
+        # ✅ Correct final message
         if dry_run:
            print(f"\n  Preview: {len(results)} file(s) would be moved.")
         else:
            print(f"\n  Done. {len(results)} file(s) moved.")
 
-        for f in sorted(files):
-            entry = self.organize_file(f, dry_run=dry_run)
-            if entry:
-                results.append(entry)
+       # ✅ Skipped info
+        if self.skipped_files:
+            skipped_exts = sorted(set(f.suffix.lower() for f in self.skipped_files))
+            print(f"Skipped {len(self.skipped_files)} file(s) (extensions: {', '.join(skipped_exts)})")
 
-        print(f"\n  Done. {len(results)} file(s) moved.")
+        
         save_run_snapshot(self.watch_folder, results, dry_run=dry_run)
         return results
 

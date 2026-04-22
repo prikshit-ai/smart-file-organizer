@@ -62,6 +62,10 @@ def cmd_run(args):
     if args.dry_run:
         print("[yellow]Mode: DRY RUN - no files will be moved[/yellow]\n")
 
+    exclude_exts = []
+    if args.exclude:
+        exclude_exts = [f".{ext.strip().lower()}" for ext in args.exclude.split(",")]
+
     organizer = Organizer(folder, config_path=args.config, silent=args.silent)
 
     results = organizer.organize_all(dry_run=args.dry_run)
@@ -180,6 +184,11 @@ def build_parser() -> argparse.ArgumentParser:
     )
     p_run.add_argument("--dry-run", action="store_true", help="Preview moves without executing")
     p_run.add_argument("--silent", action="store_true", help="Disable desktop notifications")
+    p_run.add_argument(
+    "--exclude",
+    type=str,
+    help="Comma-separated file extensions to skip (e.g. pdf,mp4,dmg)",
+)
     p_run.set_defaults(func=cmd_run)
 
     # undo
