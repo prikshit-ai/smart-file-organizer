@@ -1,14 +1,18 @@
 {
-  "file1.pdf": {
-    "from": "/Users/prikshitgaur/Desktop/ost/smart-file-organizer/test_folder/PDFs/General/file1.pdf",
-    "to": "/Users/prikshitgaur/Desktop/ost/smart-file-organizer/test_folder/Documents/file1.pdf"
+  "invoice2.txt": {
+    "from": "/Users/prikshitgaur/Desktop/ost/smart-file-organizer/test_folder/invoice2.txt",
+    "to": "/Users/prikshitgaur/Desktop/ost/smart-file-organizer/test_folder/Documents/Invoices/invoice2.txt"
   },
-  "invoice.pdf": {
-    "from": "/Users/prikshitgaur/Desktop/ost/smart-file-organizer/test_folder/PDFs/Invoices/invoice.pdf",
-    "to": "/Users/prikshitgaur/Desktop/ost/smart-file-organizer/test_folder/Documents/Invoices/invoice_1.pdf"
+  "notes3.txt": {
+    "from": "/Users/prikshitgaur/Desktop/ost/smart-file-organizer/test_folder/notes3.txt",
+    "to": "/Users/prikshitgaur/Desktop/ost/smart-file-organizer/test_folder/Documents/Notes/notes3.txt"
   },
-  "resume.pdf": {
-    "from": "/Users/prikshitgaur/Desktop/ost/smart-file-organizer/test_folder/PDFs/Resumes/resume.pdf",
-    "to": "/Users/prikshitgaur/Desktop/ost/smart-file-organizer/test_folder/Documents/Resumes/resume_1.pdf"
+  "random2.txt": {
+    "from": "/Users/prikshitgaur/Desktop/ost/smart-file-organizer/test_folder/random2.txt",
+    "to": "/Users/prikshitgaur/Desktop/ost/smart-file-organizer/test_folder/Documents/random2.txt"
+  },
+  "resume4.txt": {
+    "from": "/Users/prikshitgaur/Desktop/ost/smart-file-organizer/test_folder/resume4.txt",
+    "to": "/Users/prikshitgaur/Desktop/ost/smart-file-organizer/test_folder/Documents/Resumes/resume4.txt"
   }
 }
