@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import csv
 import re
+from datetime import datetime
 from pathlib import Path, PurePosixPath
 from typing import Any
 
@@ -102,3 +104,22 @@ def build_audit_summary(audit_log_path: Path) -> dict[str, Any]:
     except OSError:
         return summarize_moves([])
     return summarize_moves(parse_audit_log_text(text))
+
+
+def export_report_to_csv(report: dict[str, Any], dest_dir: Path | None = None) -> Path:
+    """
+    Write the category summary to ``organizer_report_YYYYMMDD.csv`` under ``dest_dir``.
+
+    When ``dest_dir`` is None, uses the process current working directory.
+    """
+    out_dir = Path(dest_dir) if dest_dir is not None else Path.cwd()
+    out_dir = out_dir.resolve()
+    name = f"organizer_report_{datetime.now().strftime('%Y%m%d')}.csv"
+    path = (out_dir / name).resolve()
+    categories = report.get("categories") or {}
+    with path.open("w", encoding="utf-8", newline="") as fh:
+        w = csv.writer(fh)
+        w.writerow(["category", "count", "last_activity"])
+        for cat, info in categories.items():
+            w.writerow([cat, info["count"], info["last_activity"]])
+    return path
