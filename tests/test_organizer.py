@@ -248,6 +248,41 @@ class TestReporter:
         assert s["total"] == 0
         assert s["categories"] == {}
 
+    def test_export_report_to_csv(self, tmp_path):
+        import csv
+
+        from organizer.reporter import export_report_to_csv
+
+        report = {
+            "total": 2,
+            "categories": {
+                "Images": {"count": 2, "last_activity": "2026-04-18"},
+            },
+            "first_activity": "2026-04-17",
+            "last_activity": "2026-04-18",
+        }
+        path = export_report_to_csv(report, dest_dir=tmp_path)
+        assert path.parent == tmp_path.resolve()
+        assert path.name.startswith("organizer_report_")
+        assert path.suffix == ".csv"
+        rows = list(path.read_text(encoding="utf-8").strip().splitlines())
+        parsed = list(csv.reader(rows))
+        assert parsed[0] == ["category", "count", "last_activity"]
+        assert parsed[1] == ["Images", "2", "2026-04-18"]
+
+    def test_export_empty_report_writes_header_only(self, tmp_path):
+        import csv
+
+        from organizer.reporter import export_report_to_csv
+
+        path = export_report_to_csv(
+            {"total": 0, "categories": {}, "first_activity": None, "last_activity": None},
+            dest_dir=tmp_path,
+        )
+        lines = [ln for ln in path.read_text(encoding="utf-8").splitlines() if ln.strip()]
+        assert len(lines) == 1
+        assert list(csv.reader(lines)) == [["category", "count", "last_activity"]]
+
 
 class TestReport:
     def test_report_empty(self, organizer):

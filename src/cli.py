@@ -6,7 +6,7 @@ Commands:
   organizer watch <folder>   Watch a folder in real-time
   organizer run <folder>     Organize all files in a folder once
   organizer undo <folder>    Undo the last run session (or log steps if no snapshot)
-  organizer report <folder>  Show an organization summary report
+  organizer report <folder>  Show an organization summary report (--export saves CSV)
 """
 
 import sys
@@ -18,7 +18,7 @@ from rich import print
 from rich.box import ASCII
 from rich.table import Table
 
-from organizer.reporter import build_audit_summary
+from organizer.reporter import build_audit_summary, export_report_to_csv
 
 # Allow running as: python -m src.cli OR as installed command
 try:
@@ -122,7 +122,14 @@ def cmd_report(args):
 
     if args.json:
         print(json.dumps(report, indent=2))
+        if args.export:
+            out = export_report_to_csv(report, Path.cwd())
+            print(f"\n[green]Report saved to {out}[/green]")
         return
+
+    if args.export:
+        out = export_report_to_csv(report, Path.cwd())
+        print(f"[green]Report saved to {out}[/green]\n")
 
     print("\n[bold cyan]Smart File Organizer - Report[/bold cyan]")
     print("-" * 40)
@@ -214,6 +221,11 @@ def build_parser() -> argparse.ArgumentParser:
         help="Show an organization summary report",
     )
     p_report.add_argument("--json", action="store_true", help="Output report as JSON")
+    p_report.add_argument(
+        "--export",
+        action="store_true",
+        help="Write category summary to organizer_report_YYYYMMDD.csv in the current directory",
+    )
     p_report.set_defaults(func=cmd_report)
 
     return parser
