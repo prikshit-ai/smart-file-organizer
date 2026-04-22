@@ -142,5 +142,37 @@
     "destination": "/Users/prikshitgaur/Desktop/ost/smart-file-organizer/test_folder/Documents/Resumes/resume_1.pdf",
     "category": "Documents/Resumes",
     "dry_run": false
+  },
+  {
+    "timestamp": "2026-04-21T11:02:50.836156",
+    "filename": "invoice2.txt",
+    "source": "/Users/prikshitgaur/Desktop/ost/smart-file-organizer/test_folder/invoice2.txt",
+    "destination": "/Users/prikshitgaur/Desktop/ost/smart-file-organizer/test_folder/Documents/Invoices/invoice2.txt",
+    "category": "Documents/Invoices",
+    "dry_run": false
+  },
+  {
+    "timestamp": "2026-04-21T11:02:50.838130",
+    "filename": "notes3.txt",
+    "source": "/Users/prikshitgaur/Desktop/ost/smart-file-organizer/test_folder/notes3.txt",
+    "destination": "/Users/prikshitgaur/Desktop/ost/smart-file-organizer/test_folder/Documents/Notes/notes3.txt",
+    "category": "Documents/Notes",
+    "dry_run": false
+  },
+  {
+    "timestamp": "2026-04-21T11:02:50.839357",
+    "filename": "random2.txt",
+    "source": "/Users/prikshitgaur/Desktop/ost/smart-file-organizer/test_folder/random2.txt",
+    "destination": "/Users/prikshitgaur/Desktop/ost/smart-file-organizer/test_folder/Documents/random2.txt",
+    "category": "Documents",
+    "dry_run": false
+  },
+  {
+    "timestamp": "2026-04-21T11:02:50.840777",
+    "filename": "resume4.txt",
+    "source": "/Users/prikshitgaur/Desktop/ost/smart-file-organizer/test_folder/resume4.txt",
+    "destination": "/Users/prikshitgaur/Desktop/ost/smart-file-organizer/test_folder/Documents/Resumes/resume4.txt",
+    "category": "Documents/Resumes",
+    "dry_run": false
   }
 ]
